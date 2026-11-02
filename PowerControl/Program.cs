@@ -26,7 +26,8 @@ namespace PowerControl
 
             for (int i = 0; !VangoghGPU.IsSupported && i < MAX_GPU_RETRIES; i++)
             {
-                var status = Instance.WithGlobalMutex(1000, () => VangoghGPU.Detect());
+                var status = Instance.WithGlobalMutex<VangoghGPU.DetectionStatus?>(1000, () => VangoghGPU.Detect())
+                    ?? VangoghGPU.DetectionStatus.Retryable;
                 Log.Info("GPU detect: attempt {0}/{1}: {2}, supported={3}, uptime={4}s",
                     i + 1, MAX_GPU_RETRIES, status, VangoghGPU.IsSupported, Environment.TickCount64 / 1000);
                 if (status != VangoghGPU.DetectionStatus.Retryable)
