@@ -17,7 +17,7 @@ namespace PowerControl.Helpers.AMD
             // BIOS 105
             // new Device("AMD Custom GPU 0932", 0x80600000, 0x8067ffff, new uint[] { 0x063F0E00 }),
             // BIOS 107
-            new Device("AMD Custom GPU 0932", 0x80500000, 0x8057ffff, new uint[] { 0x063F0F00 }),
+            new Device("AMD Custom GPU 0932", 0x80500000, 0x8057ffff, new uint[] { 0x063F0F00, 0x063F1100 }),
 
             // SteamDeck unofficial APU drivers
             // https://sourceforge.net/projects/amernimezone/files/Release%20Polaris-Vega-Navi/AMD%20SOC%20Driver%20Variant/
@@ -100,16 +100,19 @@ namespace PowerControl.Helpers.AMD
                     if (gpu is null)
                     {
                         Error("GPU: {0}: {1}: Failed to open.", deviceName, devicePNP);
-                        continue;
+                        return DetectionStatus.Retryable;
                     }
 
                     var smuVersion = gpu.SMUVersion;
                     if (!device.Item4.Contains(smuVersion))
                     {
-                        // Silence SMU_Version = 0 since it happens fairly often
                         if (smuVersion != 0)
                         {
                             Error("GPU: {0}: {1}: SMU not supported: {2:X8} (IO: {3})", deviceName, devicePNP, smuVersion, expectedRange);
+                        }
+                        else
+                        {
+                            Info("GPU: {0}: SMU version is 0 (no response), will retry.", deviceName);
                         }
                         return DetectionStatus.Retryable;
                     }

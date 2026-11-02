@@ -1,4 +1,5 @@
 ﻿using CommonHelpers;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace PowerControl.Helpers.AMD
@@ -46,7 +47,36 @@ namespace PowerControl.Helpers.AMD
                 return false;
             }
 
+            if (!Opened)
+            {
+                Log.Error("RyzenSMU: MapPhysToLin failed: addr={0:X}, size={1:X}, mapped={2:X}, handle={3:X}, driver: {4}, uptime={5}s",
+                    (long)MMIO_ADDR, MMIO_SIZE, (long)mappedAddress, (long)physicalHandle, DriverState(), Environment.TickCount64 / 1000);
+            }
+
             return Opened;
+        }
+
+        private static string DriverState()
+        {
+            try
+            {
+                using var process = Process.Start(new ProcessStartInfo("sc.exe", "query inpoutx64")
+                {
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                });
+                if (process is null)
+                    return "unknown";
+                var output = process.StandardOutput.ReadToEnd();
+                process.WaitForExit(2000);
+                var line = output.Split('\n').FirstOrDefault(l => l.Contains("STATE") || l.Contains("Состояние"));
+                return line?.Trim() ?? output.Trim().Replace('\n', ' ');
+            }
+            catch (Exception e)
+            {
+                return "error: " + e.Message;
+            }
         }
 
         public void Dispose()
